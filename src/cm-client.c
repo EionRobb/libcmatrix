@@ -334,14 +334,8 @@ handle_matrix_glitches (CmClient *self,
    */
   if (g_error_matches (error, G_IO_ERROR, G_IO_ERROR_NETWORK_UNREACHABLE) ||
       g_error_matches (error, G_IO_ERROR, G_IO_ERROR_TIMED_OUT) ||
-#if SOUP_MAJOR_VERSION == 2
-      (error->domain == SOUP_HTTP_ERROR &&
-       error->code <= SOUP_STATUS_TLS_FAILED &&
-       error->code > SOUP_STATUS_CANCELLED) ||
-#else
       error->domain == SOUP_TLD_ERROR ||
       error->domain == G_TLS_ERROR ||
-#endif
       /* Should we handle connection_refused, or just keep it for localhost? */
       g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CONNECTION_REFUSED) ||
       error->domain == G_RESOLVER_ERROR ||
@@ -1318,11 +1312,6 @@ gboolean
 cm_client_set_homeserver (CmClient   *self,
                           const char *homeserver)
 {
-#if SOUP_MAJOR_VERSION == 2
-  g_autoptr(SoupURI) uri = NULL;
-#else
-  g_autoptr(GUri) uri = NULL;
-#endif
   GString *server;
 
   g_return_val_if_fail (CM_IS_CLIENT (self), FALSE);
@@ -1897,7 +1886,6 @@ room_loaded_cb (GObject      *obj,
                 GAsyncResult *result,
                 gpointer      user_data)
 {
-  g_autoptr(CmClient) self = user_data;
   g_autoptr(GError) error = NULL;
   CmRoom *room = CM_ROOM (obj);
 
@@ -2088,7 +2076,9 @@ verification_send_key_cb (GObject      *object,
                           GAsyncResult *result,
                           gpointer      user_data)
 {
-  g_autoptr(CmClient) self = user_data;
+  CmClient *self = CM_CLIENT (user_data);
+
+  g_object_unref (self);
 }
 
 static void
